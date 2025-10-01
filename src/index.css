@@ -1,0 +1,64 @@
+/* Base mínima y neutra (dejamos que Bootstrap marque la estética) */
+:root {
+  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Reset del body sin el centrado forzado de Vite */
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  display: block; /* importante para no centrar todo como hacía Vite */
+}
+
+/* -------- Accesibilidad -------- */
+
+/* Enlace de salto visible al enfocar */
+.skip-link {
+  position: absolute;
+  left: -10000px;
+  top: auto;
+  width: 1px; height: 1px; overflow: hidden;
+}
+.skip-link:focus {
+  left: 1rem; top: 1rem; width: auto; height: auto;
+  background: #0d6efd; color: white; padding: .5rem .75rem; border-radius: .5rem;
+  z-index: 1060;
+}
+
+/* Foco visible para elementos interactivos */
+:where(a, button, [role="button"], .form-control, .form-select):focus-visible {
+  outline: 3px solid #86b7fe;
+  outline-offset: 2px;
+}
+
+/* Enlaces reconocibles: subrayado en hover (sin tocar colores Bootstrap) */
+a:not(.btn):hover {
+  text-decoration: underline;
+}
+
+/* -------- Ajustes visuales suaves -------- */
+
+/* Zebra muy leve para filas de tabla (no compite con hover) */
+.table-zebra tbody tr:nth-child(odd) {
+  background-color: rgba(0,0,0,.015);
+}
+
+/* Redondeos consistentes (coherencia visual con nuestro look) */
+.card.shadow-sm { border-radius: 12px; }
+.form-control, .form-select { border-radius: 10px; }
+.btn { border-radius: 12px; }
+
+/* Hero centrado: un poco de aire arriba/abajo */
+.hero { padding-top: .25rem; padding-bottom: .25rem; }
+
+/* Barra de controles: separador suave en desktop */
+@media (min-width: 992px) {
+  .control-bar { border-top: 1px solid rgba(0,0,0,.06); padding-top: .75rem; }
+}
