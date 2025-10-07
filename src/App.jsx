@@ -1,3 +1,4 @@
+// src/App.jsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
 
 /* ========= Modelo y helpers ========= */
@@ -18,7 +19,7 @@ const LS_KEY = "transport-expenses/v2";
 const norm = (s) =>
   String(s || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
-/** Debounce simple para inputs */
+/** Debounce simple */
 function useDebounced(value, delay = 250) {
   const [v, setV] = React.useState(value);
   React.useEffect(() => {
@@ -235,38 +236,39 @@ export default function App() {
   /* UI: toasts, confirmaciones, etc. */
   const [toast, setToast] = useState(null);
   const [showForm, setShowForm] = useState(false);
-  const [showHelp, setShowHelp] = useState(false);
-  const [confirm, setConfirm] = useState({ open: false, kind: null, id: null });
+  const [showHelp, setShowHelp] = useState(false); // modal de ayuda
+  const [confirm, setConfirm] = useState({ open: false, id: null });
 
   function askDelete(id) {
-    setConfirm({ open: true, kind: "one", id });
-  }
-  function askDeleteAll() {
-    setConfirm({ open: true, kind: "all", id: null });
+    setConfirm({ open: true, id });
   }
   function confirmDelete() {
-    if (confirm.kind === "one" && confirm.id != null) {
+    if (confirm.id != null) {
       setItems((prev) => prev.filter((x) => x.id !== confirm.id));
       setToast({ type: "ok", msg: "Registro eliminado." });
     }
-    if (confirm.kind === "all") {
-      setItems([]);
-      setToast({ type: "ok", msg: "Todos los registros borrados." });
-    }
-    setConfirm({ open: false, kind: null, id: null });
+    setConfirm({ open: false, id: null });
   }
-  function handleRestart() {
-    localStorage.removeItem(LS_KEY);
-    NEXT_ID = initialData.length + 1;
-    setItems(initialData);
-    setToast({ type: "ok", msg: "Datos reiniciados." });
+
+  /* Abrir ayuda cuando el navbar navega a #help */
+  useEffect(() => {
+    function onHash() {
+      if (window.location.hash === "#help") setShowHelp(true);
+    }
+    window.addEventListener("hashchange", onHash);
+    onHash(); // por si ya venía con #help
+    return () => window.removeEventListener("hashchange", onHash);
+  }, []);
+  function closeHelp() {
+    setShowHelp(false);
+    if (window.location.hash === "#help") {
+      // limpiar hash sin recargar
+      history.replaceState(null, "", " ");
+    }
   }
 
   /* Refs */
   const searchRef = useRef(null);
-  useEffect(() => {
-    searchRef.current?.focus();
-  }, []);
 
   /* Cálculos de paginador */
   const startIndex = (page - 1) * rowsPerPage + 1;
@@ -275,7 +277,7 @@ export default function App() {
   /* ======== RENDER ======== */
   return (
     <>
-      {/* HERO — centrado */}
+      {/* HERO — SOLO CTA principal (Nuevo gasto) */}
       <section className="hero text-center mb-3">
         <div className="row justify-content-center">
           <div className="col-12 col-lg-8 col-xl-6">
@@ -283,64 +285,26 @@ export default function App() {
             <p className="lead text-body-secondary mb-3">
               Registra viajes y gastos de forma simple.
             </p>
-          </div>
-        </div>
 
-        {/* Buscador centrado */}
-        <div className="row justify-content-center">
-          <div className="col-12 col-lg-8 col-xl-6">
-            <label htmlFor="search" className="visually-hidden">
-              Buscar
-            </label>
-            <div className="input-group input-group-lg">
-              <span className="input-group-text">
-                <i className="bi bi-search"></i>
-              </span>
-              <input
-                id="search"
-                ref={searchRef}
-                value={qInput}
-                onChange={(e) => {
-                  setQInput(e.target.value);
-                  setPage(1);
-                }}
-                placeholder="Buscar… (medio, anotaciones, zona)"
-                className="form-control"
-              />
-              {qInput && (
-                <button
-                  className="btn btn-outline-secondary"
-                  onClick={() => setQInput("")}
-                  title="Limpiar búsqueda"
-                >
-                  <i className="bi bi-x-lg"></i>
-                </button>
-              )}
+            <div className="d-flex justify-content-center">
+              <button className="btn btn-primary btn-lg" onClick={() => setShowForm((v) => !v)}>
+                <i className="bi bi-plus-lg me-1"></i>
+                {showForm ? "Cerrar formulario" : "Nuevo gasto"}
+              </button>
             </div>
           </div>
         </div>
+      </section>
 
-        {/* Barra de controles */}
-        <div className="row align-items-end control-bar mt-3 g-2">
-          <div className="col-12 col-lg-6 d-flex flex-wrap justify-content-center justify-content-lg-start gap-2">
-            <button className="btn btn-primary" onClick={() => setShowForm((v) => !v)}>
-              <i className="bi bi-plus-lg me-1"></i>
-              {showForm ? "Cerrar" : "Nuevo gasto"}
-            </button>
-            <button className="btn btn-outline-danger" onClick={askDeleteAll}>
-              <i className="bi bi-trash me-1"></i> Borrar todo
-            </button>
-            <button className="btn btn-outline-secondary" onClick={() => setShowHelp(true)}>
-              <i className="bi bi-question-circle me-1"></i> Ayuda
-            </button>
-          </div>
+      <Toast toast={toast} onClose={() => setToast(null)} />
 
+      {/* CONTROLES — Orden a la izquierda, búsqueda a la derecha */}
+      <section className="mb-3">
+        <div className="row g-2 align-items-end">
           <div className="col-12 col-lg-6">
             <div className="row g-2">
               <div className="col-6">
-                <label htmlFor="orderBy" className="form-label mb-1">
-                  Ordenar por
-                </label>
+                <label htmlFor="orderBy" className="form-label mb-1">Ordenar por</label>
                 <select
                   id="orderBy"
                   value={orderBy}
@@ -356,9 +320,7 @@ export default function App() {
                 </select>
               </div>
               <div className="col-6">
-                <label htmlFor="orderDir" className="form-label mb-1">
-                  Dirección
-                </label>
+                <label htmlFor="orderDir" className="form-label mb-1">Dirección</label>
                 <select
                   id="orderDir"
                   value={orderDir}
@@ -371,10 +333,33 @@ export default function App() {
               </div>
             </div>
           </div>
+
+          {/* Buscador con estilo suave (clase search-soft) */}
+          <div className="col-12 col-lg-6">
+            <label htmlFor="search" className="form-label mb-1">Buscar</label>
+            <div className="input-group">
+              <span className="input-group-text"><i className="bi bi-search"></i></span>
+              <input
+                id="search"
+                ref={searchRef}
+                value={qInput}
+                onChange={(e) => { setQInput(e.target.value); setPage(1); }}
+                placeholder="(medio, anotaciones, zona)"
+                className="form-control search-soft"
+              />
+              {qInput && (
+                <button
+                  className="btn btn-outline-secondary"
+                  onClick={() => setQInput("")}
+                  title="Limpiar búsqueda"
+                >
+                  <i className="bi bi-x-lg"></i>
+                </button>
+              )}
+            </div>
+          </div>
         </div>
       </section>
-
-      <Toast toast={toast} onClose={() => setToast(null)} />
 
       {/* FORM en tarjeta */}
       {showForm && (
@@ -382,9 +367,7 @@ export default function App() {
           <div className="card-body">
             <fieldset className="row g-3">
               <div className="col-12 col-md-3">
-                <label htmlFor="medio" className="form-label">
-                  Medio
-                </label>
+                <label htmlFor="medio" className="form-label">Medio</label>
                 <select
                   id="medio"
                   value={form.medio}
@@ -393,16 +376,12 @@ export default function App() {
                   required
                 >
                   {MEDIOS.map((m) => (
-                    <option key={m} value={m}>
-                      {m}
-                    </option>
+                    <option key={m} value={m}>{m}</option>
                   ))}
                 </select>
               </div>
               <div className="col-12 col-md-5">
-                <label htmlFor="anotaciones" className="form-label">
-                  Anotaciones
-                </label>
+                <label htmlFor="anotaciones" className="form-label">Anotaciones</label>
                 <input
                   id="anotaciones"
                   value={form.anotaciones}
@@ -412,9 +391,7 @@ export default function App() {
                 />
               </div>
               <div className="col-12 col-md-4">
-                <label htmlFor="zona" className="form-label">
-                  Zona
-                </label>
+                <label htmlFor="zona" className="form-label">Zona</label>
                 <input
                   id="zona"
                   value={form.zona}
@@ -424,25 +401,19 @@ export default function App() {
                 />
               </div>
               <div className="col-6 col-md-3">
-                <label htmlFor="tiempoDemora" className="form-label">
-                  Demora (min)
-                </label>
+                <label htmlFor="tiempoDemora" className="form-label">Demora (min)</label>
                 <input
                   id="tiempoDemora"
                   type="number"
                   min={0}
                   inputMode="numeric"
                   value={form.tiempoDemora}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, tiempoDemora: Number(e.target.value) }))
-                  }
+                  onChange={(e) => setForm((f) => ({ ...f, tiempoDemora: Number(e.target.value) }))}
                   className="form-control"
                 />
               </div>
               <div className="col-6 col-md-3">
-                <label htmlFor="gasto" className="form-label">
-                  Gasto ($)
-                </label>
+                <label htmlFor="gasto" className="form-label">Gasto ($)</label>
                 <input
                   id="gasto"
                   type="number"
@@ -451,39 +422,27 @@ export default function App() {
                   inputMode="decimal"
                   value={form.gasto}
                   onChange={(e) => setForm((f) => ({ ...f, gasto: Number(e.target.value) }))}
-                  className={`form-control ${
-                    errors.gasto ? "is-invalid" : form.gasto > 0 ? "is-valid" : ""
-                  }`}
+                  className={`form-control ${errors.gasto ? "is-invalid" : form.gasto > 0 ? "is-valid" : ""}`}
                   required
                   aria-describedby="gastoHelp"
                 />
-                <div
-                  id="gastoHelp"
-                  className={`form-text ${errors.gasto ? "text-danger" : ""}`}
-                >
+                <div id="gastoHelp" className={`form-text ${errors.gasto ? "text-danger" : ""}`}>
                   {errors.gasto || "Ingresá el monto del viaje."}
                 </div>
               </div>
               <div className="col-12 col-md-3">
-                <label htmlFor="calificacion" className="form-label">
-                  Calificación (1–5)
-                </label>
+                <label htmlFor="calificacion" className="form-label">Calificación (1–5)</label>
                 <input
                   id="calificacion"
                   type="number"
                   min={1}
                   max={5}
                   value={form.calificacion}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, calificacion: Number(e.target.value) }))
-                  }
-                  className={`form-control ${
-                    errors.calificacion ? "is-invalid" : form.calificacion ? "is-valid" : ""
-                  }`}
+                  onChange={(e) => setForm((f) => ({ ...f, calificacion: Number(e.target.value) }))}
+                  className={`form-control ${errors.calificacion ? "is-invalid" : form.calificacion ? "is-valid" : ""}`}
                 />
                 <div className={`form-text ${errors.calificacion ? "text-danger" : ""}`}>
-                  {errors.calificacion ||
-                    "⭐".repeat(Math.max(1, Math.min(5, Number(form.calificacion) || 1)))}
+                  {errors.calificacion || "⭐".repeat(Math.max(1, Math.min(5, Number(form.calificacion) || 1)))}
                 </div>
               </div>
             </fieldset>
@@ -493,11 +452,7 @@ export default function App() {
                 <i className="bi bi-check2 me-1"></i>
                 {editingId == null ? "Guardar" : "Actualizar"}
               </button>
-              <button
-                type="button"
-                className="btn btn-outline-secondary"
-                onClick={resetForm}
-              >
+              <button type="button" className="btn btn-outline-secondary" onClick={resetForm}>
                 Limpiar
               </button>
             </div>
@@ -508,14 +463,13 @@ export default function App() {
         </form>
       )}
 
-      {/* TABLA en tarjeta */}
+      {/* TABLA en tarjeta (SIN columna ID) */}
       <div className="card shadow-sm">
         <div className="card-body p-0">
           <div className="table-responsive">
             <table className="table table-hover align-middle mb-0">
               <thead className="table-light">
                 <tr>
-                  <th scope="col">#</th>
                   <th scope="col">Medio</th>
                   <th scope="col">Anotaciones</th>
                   <th scope="col">Zona</th>
@@ -523,15 +477,12 @@ export default function App() {
                   <th scope="col">Gasto</th>
                   <th scope="col">Calif.</th>
                   <th scope="col">Fecha</th>
-                  <th scope="col" className="text-nowrap">
-                    Acciones
-                  </th>
+                  <th scope="col" className="text-nowrap">Acciones</th>
                 </tr>
               </thead>
               <tbody>
                 {paginated.map((it) => (
                   <tr key={it.id}>
-                    <th scope="row">{it.id}</th>
                     <td>{it.medio}</td>
                     <td title={it.anotaciones}>
                       {String(it.anotaciones || "").slice(0, 40)}
@@ -551,14 +502,14 @@ export default function App() {
                       <button
                         className="btn btn-sm btn-outline-primary me-1"
                         onClick={() => handleEdit(it.id)}
-                        aria-label={`Editar registro ${it.id}`}
+                        aria-label="Editar registro"
                       >
                         <i className="bi bi-pencil"></i>
                       </button>
                       <button
                         className="btn btn-sm btn-outline-danger"
                         onClick={() => askDelete(it.id)}
-                        aria-label={`Eliminar registro ${it.id}`}
+                        aria-label="Eliminar registro"
                       >
                         <i className="bi bi-trash"></i>
                       </button>
@@ -567,12 +518,9 @@ export default function App() {
                 ))}
                 {paginated.length === 0 && (
                   <tr>
-                    <td colSpan={9} className="text-center text-body-secondary py-4">
+                    <td colSpan={8} className="text-center text-body-secondary py-4">
                       No encontramos resultados para “{qInput}”.{" "}
-                      <button
-                        className="btn btn-sm btn-primary ms-1"
-                        onClick={() => setShowForm(true)}
-                      >
+                      <button className="btn btn-sm btn-primary ms-1" onClick={() => setShowForm(true)}>
                         Cargar primer gasto
                       </button>
                     </td>
@@ -584,13 +532,11 @@ export default function App() {
         </div>
       </div>
 
-      {/* PIE — grupo centrado con Prev · “Página …” · Next  |  y “Filas” a la derecha */}
+      {/* PIE — Prev · texto · Next centrados | “Filas” a la derecha (sin Reiniciar) */}
       <div className="row align-items-center mt-3 g-2">
-        {/* Columna vacía para balance (izquierda) */}
-        <div className="col-12 col-md-4 order-2 order-md-1 d-none d-md-block"></div>
+        <div className="col-12 col-md-4 d-none d-md-block"></div>
 
-        {/* Centro: navegación + texto de página (centrado) */}
-        <div className="col-12 col-md-4 order-1 order-md-2">
+        <div className="col-12 col-md-4">
           <div className="d-flex justify-content-center align-items-center gap-3 flex-wrap">
             <button
               className="btn btn-outline-secondary"
@@ -614,8 +560,7 @@ export default function App() {
           </div>
         </div>
 
-        {/* Derecha: solo “Filas” (quitamos “Reiniciar datos”) */}
-        <div className="col-12 col-md-4 order-3 order-md-3 d-flex align-items-center justify-content-md-end justify-content-center gap-2">
+        <div className="col-12 col-md-4 d-flex align-items-center justify-content-md-end justify-content-center gap-2">
           <label htmlFor="rpp" className="form-label mb-0">Filas</label>
           <select
             id="rpp"
@@ -631,8 +576,7 @@ export default function App() {
         </div>
       </div>
 
-
-      {/* Ayuda */}
+      {/* Ayuda — se abre con #help desde la navbar */}
       {showHelp && (
         <>
           <div className="modal-backdrop fade show"></div>
@@ -641,45 +585,24 @@ export default function App() {
             role="dialog"
             aria-modal="true"
             aria-labelledby="helpTitle"
-            onClick={() => setShowHelp(false)}
+            onClick={closeHelp}
           >
-            <div
-              className="modal-dialog modal-lg modal-dialog-centered"
-              onClick={(e) => e.stopPropagation()}
-            >
+            <div className="modal-dialog modal-lg modal-dialog-centered" onClick={(e) => e.stopPropagation()}>
               <div className="modal-content">
                 <div className="modal-header">
-                  <h5 id="helpTitle" className="modal-title">
-                    Ayuda
-                  </h5>
-                  <button
-                    className="btn-close"
-                    aria-label="Cerrar"
-                    onClick={() => setShowHelp(false)}
-                  />
+                  <h5 id="helpTitle" className="modal-title">Ayuda</h5>
+                  <button className="btn-close" aria-label="Cerrar" onClick={closeHelp} />
                 </div>
                 <div className="modal-body">
-                  <p className="mb-2">
-                    Búsqueda centrada, orden por menú, validación y feedback
-                    accesible. Se respeta rejilla de 12 columnas y jerarquía visual.
-                  </p>
                   <ul className="mb-0">
-                    <li>
-                      <b>Buscar:</b> medio, anotaciones o zona (ignora mayúsculas y
-                      tildes).
-                    </li>
-                    <li>
-                      <b>Ordenar:</b> elegí criterio y dirección en los selectores.
-                    </li>
-                    <li>
-                      <b>Borrar:</b> pide confirmación.
-                    </li>
+                    <li><b>CTA principal:</b> “Nuevo gasto” centrado arriba.</li>
+                    <li><b>Búsqueda:</b> en la barra de controles; ignora mayúsculas/tildes.</li>
+                    <li><b>Accesibilidad:</b> labels visibles, foco, estados de validación.</li>
+                    <li><b>Borrado:</b> solo individual con confirmación.</li>
                   </ul>
                 </div>
                 <div className="modal-footer">
-                  <button className="btn btn-primary" onClick={() => setShowHelp(false)}>
-                    Entendido
-                  </button>
+                  <button className="btn btn-primary" onClick={closeHelp}>Entendido</button>
                 </div>
               </div>
             </div>
@@ -689,16 +612,12 @@ export default function App() {
 
       <ConfirmDialog
         show={confirm.open}
-        title={confirm.kind === "all" ? "Borrar todos los registros" : "Eliminar registro"}
-        message={
-          confirm.kind === "all"
-            ? "¿Seguro que querés borrar TODOS los registros? Esta acción no se puede deshacer."
-            : "¿Seguro que querés eliminar este registro?"
-        }
+        title="Eliminar registro"
+        message="¿Seguro que querés eliminar este registro?"
         confirmText="Sí, borrar"
         cancelText="Cancelar"
         onConfirm={confirmDelete}
-        onCancel={() => setConfirm({ open: false, kind: null, id: null })}
+        onCancel={() => setConfirm({ open: false, id: null })}
       />
     </>
   );

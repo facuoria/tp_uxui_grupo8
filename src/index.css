@@ -62,3 +62,15 @@ a:not(.btn):hover {
 @media (min-width: 992px) {
   .control-bar { border-top: 1px solid rgba(0,0,0,.06); padding-top: .75rem; }
 }
+
+/* Input de búsqueda suavizado */
+.search-soft {
+  background-color: #f7f8fa;
+  border-color: #e9ecef;
+}
+.search-soft:focus {
+  background-color: #fff;
+  border-color: #86b7fe;
+  box-shadow: 0 0 0 .2rem rgba(13,110,253,.1);
+}
+.search-soft::placeholder { color: #9aa0a6; }
