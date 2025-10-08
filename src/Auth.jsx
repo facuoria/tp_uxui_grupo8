@@ -1,189 +1,141 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 export default function Auth() {
-  const [tab, setTab] = useState("login"); // 'login' | 'register'
-  const [email, setEmail] = useState(localStorage.getItem("lastEmail") || "");
-  const [password, setPassword] = useState("");
-  const [confirmPwd, setConfirmPwd] = useState("");
-  const [showPwd, setShowPwd] = useState(false);
-  const [showConfirmPwd, setShowConfirmPwd] = useState(false);
-  const [toast, setToast] = useState(null);
-
-  const emailRef = useRef(null);
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
-  // Habilitación del botón según tab (sin verificar coincidencia)
-  const canSubmit =
-    tab === "login"
-      ? password.length >= 3
-      : password.length >= 3 && confirmPwd.length >= 3;
+  const [mode, setMode] = useState("login"); // 'login' | 'register'
+  const [showPwd, setShowPwd] = useState(false);
 
-  useEffect(() => {
-    emailRef.current?.focus();
-  }, []);
+  const [form, setForm] = useState({
+    email: "juan@gmail.com",
+    password: "",
+    password2: "",
+    name: "",
+  });
 
-  useEffect(() => {
-    if (!toast) return;
-    const t = setTimeout(() => setToast(null), 2500);
-    return () => clearTimeout(t);
-  }, [toast]);
-
-  function onSubmit(e) {
+  const onSubmit = (e) => {
     e.preventDefault();
-
-    // Guardas de UX (por si alguien forcea el submit):
-    if (tab === "register" && (password.length < 3 || confirmPwd.length < 3)) {
-      return setToast({ type: "err", msg: "Completá ambas contraseñas (3+ caracteres)." });
-    }
-    if (tab === "login" && password.length < 3) {
-      return setToast({ type: "err", msg: "Usá 3+ caracteres por ahora (demo)." });
-    }
-
-    // Validación mínima del email (demo)
-    if (!email.includes("@")) {
-      return setToast({ type: "err", msg: "Ingresá un email válido." });
-    }
-
-    // Demo: no verificamos coincidencia de contraseñas
-    localStorage.setItem("lastEmail", email);
-    setToast({ type: "ok", msg: tab === "login" ? "Sesión iniciada" : "Cuenta creada" });
-    setTimeout(() => navigate("/app"), 400);
-  }
+    // Demo: no valida credenciales. Redirige a /app
+    navigate("/app");
+  };
 
   return (
-    <main className="container py-5">
+    <div className="container py-5">
       <div className="row justify-content-center">
-        <div className="col-12 col-lg-8 col-xl-6">
-          <header className="text-center mb-4">
-            <h1 className="display-6 fw-semibold">Gastos de Transporte</h1>
-            <p className="text-body-secondary m-0">Iniciá sesión o creá tu cuenta</p>
-          </header>
+        <div className="col-12 col-md-7 col-lg-6 col-xl-5">
+          <div className="text-center mb-3">
+            <h1 className="display-6 fw-semibold">{t("auth.title")}</h1>
+            <p className="lead text-body-secondary mb-0">{t("auth.subtitle")}</p>
+          </div>
 
-          {/* Tabs */}
-          <div className="d-flex justify-content-center mb-3 gap-2">
+          {/* Pestañas */}
+          <div className="d-flex justify-content-center gap-2 mb-3">
             <button
-              className={`btn ${tab === "login" ? "btn-primary" : "btn-outline-primary"}`}
-              onClick={() => setTab("login")}
+              type="button"
+              className={`btn ${mode === "login" ? "btn-primary" : "btn-outline-primary"}`}
+              onClick={() => setMode("login")}
             >
-              Iniciar sesión
+              {t("auth.login")}
             </button>
             <button
-              className={`btn ${tab === "register" ? "btn-primary" : "btn-outline-primary"}`}
-              onClick={() => setTab("register")}
+              type="button"
+              className={`btn ${mode === "register" ? "btn-primary" : "btn-outline-primary"}`}
+              onClick={() => setMode("register")}
             >
-              Crear cuenta
+              {t("auth.register")}
             </button>
           </div>
 
           {/* Card */}
-          <section className="card shadow-sm">
-            <div className="card-body p-4">
-              <form onSubmit={onSubmit} noValidate>
+          <div className="card shadow-sm">
+            <div className="card-body">
+              <form onSubmit={onSubmit}>
                 <div className="mb-3">
-                  <label htmlFor="email" className="form-label">Email</label>
+                  <label htmlFor="email" className="form-label">{t("auth.email")}</label>
                   <input
-                    ref={emailRef}
                     id="email"
                     type="email"
-                    className="form-control form-control-lg"
-                    placeholder="tu@correo.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    autoComplete="email"
+                    className="form-control"
+                    value={form.email}
+                    onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+                    placeholder="ejemplo@correo.com"
                     required
                   />
                 </div>
 
                 <div className="mb-3">
-                  <label htmlFor="password" className="form-label">Contraseña</label>
-                  <div className="input-group input-group-lg">
+                  <label htmlFor="password" className="form-label">{t("auth.password")}</label>
+                  <div className="input-group">
                     <input
                       id="password"
                       type={showPwd ? "text" : "password"}
                       className="form-control"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      autoComplete={tab === "login" ? "current-password" : "new-password"}
+                      value={form.password}
+                      onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
+                      placeholder="•••••••"
+                      minLength={3}
                       required
                     />
                     <button
                       type="button"
                       className="btn btn-outline-secondary"
-                      aria-pressed={showPwd}
                       onClick={() => setShowPwd((v) => !v)}
-                      title={showPwd ? "Ocultar" : "Mostrar"}
+                      aria-label={showPwd ? t("auth.hide") : t("auth.show")}
+                      title={showPwd ? t("auth.hide") : t("auth.show")}
                     >
                       <i className={`bi ${showPwd ? "bi-eye-slash" : "bi-eye"}`}></i>
                     </button>
                   </div>
-                  <div className="form-text">
-                    {tab === "register"
-                      ? "Usá 3+ caracteres por ahora (demo)."
-                      : "Luego agregaremos recuperación."}
-                  </div>
+                  <div className="form-text">{t("auth.hint")}</div>
                 </div>
 
-                {/* Repetir contraseña (solo interfaz, sin verificación real) */}
-                {tab === "register" && (
-                  <div className="mb-4">
-                    <label htmlFor="confirmPwd" className="form-label">Repetir contraseña</label>
-                    <div className="input-group input-group-lg">
+                {mode === "register" && (
+                  <>
+                    <div className="mb-3">
+                      <label htmlFor="password2" className="form-label">{t("auth.repeatPwd")}</label>
                       <input
-                        id="confirmPwd"
-                        type={showConfirmPwd ? "text" : "password"}
+                        id="password2"
+                        type={showPwd ? "text" : "password"}
                         className="form-control"
-                        value={confirmPwd}
-                        onChange={(e) => setConfirmPwd(e.target.value)}
-                        autoComplete="new-password"
+                        value={form.password2}
+                        onChange={(e) => setForm((f) => ({ ...f, password2: e.target.value }))}
+                        placeholder="•••••••"
+                        minLength={3}
+                        required
                       />
-                      <button
-                        type="button"
-                        className="btn btn-outline-secondary"
-                        aria-pressed={showConfirmPwd}
-                        onClick={() => setShowConfirmPwd((v) => !v)}
-                        title={showConfirmPwd ? "Ocultar" : "Mostrar"}
-                      >
-                        <i className={`bi ${showConfirmPwd ? "bi-eye-slash" : "bi-eye"}`}></i>
-                      </button>
                     </div>
-                    <div className="form-text">
-                      Demo: no verificamos que coincida; podés escribir cualquier cosa.
+
+                    <div className="mb-3">
+                      <label htmlFor="name" className="form-label">{t("auth.nameOpt")}</label>
+                      <input
+                        id="name"
+                        className="form-control"
+                        value={form.name}
+                        onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                        placeholder={t("auth.namePh")}
+                      />
                     </div>
-                  </div>
+                  </>
                 )}
 
-                <button
-                  type="submit"
-                  className="btn btn-primary btn-lg w-100"
-                  disabled={!canSubmit}
-                  aria-disabled={!canSubmit}
-                  title={!canSubmit ? "Completá la contraseña (y repetir) con 3+ caracteres" : undefined}
-                >
-                  {tab === "login" ? "Iniciar sesión" : "Crear cuenta"}
-                </button>
+                <div className="d-grid">
+                  <button type="submit" className="btn btn-primary btn-lg">
+                    {mode === "login" ? t("auth.login") : t("auth.create")}
+                  </button>
+                </div>
 
-                <p className="text-center text-body-secondary mt-3 mb-0" style={{ fontSize: ".9rem" }}>
-                  Demo: esta pantalla solo simula autenticación y te redirige a la app.
+                <p className="text-center text-body-secondary mt-3 mb-0">
+                  {t("auth.demoNote")}
                 </p>
               </form>
             </div>
-          </section>
+          </div>
+
         </div>
       </div>
-
-      {/* Toast accesible */}
-      {toast && (
-        <div
-          className={`alert ${toast.type === "ok" ? "alert-success" : "alert-danger"} position-fixed top-0 end-0 m-3 shadow`}
-          role="status"
-          aria-live="polite"
-          onClick={() => setToast(null)}
-          style={{ zIndex: 1056, cursor: "pointer" }}
-        >
-          {toast.msg}
-        </div>
-      )}
-    </main>
+    </div>
   );
 }

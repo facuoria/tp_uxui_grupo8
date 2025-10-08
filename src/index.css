@@ -1,69 +1,70 @@
-/* Base mínima y neutra (dejamos que Bootstrap marque la estética) */
 :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
+
+  color-scheme: light;
+  color: #213547;
+  background-color: #ffffff;
+
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Reset del body sin el centrado forzado de Vite */
+/* enlaces */
+a { font-weight: 500; color: #646cff; text-decoration: none; }
+a:hover { color: #747bff; text-decoration: underline; }
+
+/* body: quitamos centrado de la plantilla Vite */
 body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  display: block; /* importante para no centrar todo como hacía Vite */
+  display: block;
 }
 
-/* -------- Accesibilidad -------- */
+/* botones base de Vite, dejamos estilos mínimos (Bootstrap domina) */
+button {
+  border-radius: 8px;
+  border: 1px solid transparent;
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+}
 
-/* Enlace de salto visible al enfocar */
+/* foco visible y skip-link */
 .skip-link {
-  position: absolute;
-  left: -10000px;
-  top: auto;
-  width: 1px; height: 1px; overflow: hidden;
+  position: absolute; left: -10000px; top: auto; width: 1px; height: 1px; overflow: hidden;
 }
 .skip-link:focus {
   left: 1rem; top: 1rem; width: auto; height: auto;
   background: #0d6efd; color: white; padding: .5rem .75rem; border-radius: .5rem;
   z-index: 1060;
 }
-
-/* Foco visible para elementos interactivos */
 :where(a, button, [role="button"], .form-control, .form-select):focus-visible {
-  outline: 3px solid #86b7fe;
-  outline-offset: 2px;
+  outline: 3px solid #86b7fe; outline-offset: 2px;
 }
 
-/* Enlaces reconocibles: subrayado en hover (sin tocar colores Bootstrap) */
-a:not(.btn):hover {
-  text-decoration: underline;
-}
-
-/* -------- Ajustes visuales suaves -------- */
-
-/* Zebra muy leve para filas de tabla (no compite con hover) */
-.table-zebra tbody tr:nth-child(odd) {
-  background-color: rgba(0,0,0,.015);
-}
-
-/* Redondeos consistentes (coherencia visual con nuestro look) */
-.card.shadow-sm { border-radius: 12px; }
-.form-control, .form-select { border-radius: 10px; }
-.btn { border-radius: 12px; }
-
-/* Hero centrado: un poco de aire arriba/abajo */
+/* hero: un poco de aire */
 .hero { padding-top: .25rem; padding-bottom: .25rem; }
 
-/* Barra de controles: separador suave en desktop */
+/* separador sutil debajo de controles en desktop */
 @media (min-width: 992px) {
   .control-bar { border-top: 1px solid rgba(0,0,0,.06); padding-top: .75rem; }
 }
 
-/* Input de búsqueda suavizado */
+/* tabla: zebra muy leve */
+.table-zebra tbody tr:nth-child(odd) { background-color: rgba(0,0,0,.015); }
+
+/* redondeos amables */
+.card.shadow-sm { border-radius: 12px; }
+.form-control, .form-select { border-radius: 10px; }
+.btn { border-radius: 12px; }
+
+/* búsqueda suave (casi color de fondo) */
 .search-soft {
   background-color: #f7f8fa;
   border-color: #e9ecef;
@@ -74,3 +75,27 @@ a:not(.btn):hover {
   box-shadow: 0 0 0 .2rem rgba(13,110,253,.1);
 }
 .search-soft::placeholder { color: #9aa0a6; }
+
+/* respeta usuarios con "reduced motion" */
+@media (prefers-reduced-motion: reduce) {
+  * { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}
+
+/* touch targets cómodos en móviles (clase 12) */
+@media (pointer: coarse) {
+  .btn, .form-control, .form-select { min-height: 44px; }
+  .btn-icon-sm { padding: .5rem; border-radius: .75rem; }
+}
+
+/* barra de acciones inferior (solo móvil) */
+@media (max-width: 576px) {
+  .app-bottom-bar {
+    position: sticky; bottom: 0; inset-inline: 0;
+    display: flex; gap: .5rem; padding: .75rem;
+    background: var(--bs-body-bg, #fff);
+    border-top: 1px solid var(--bs-border-color, rgba(0,0,0,.08));
+    padding-bottom: calc(.75rem + env(safe-area-inset-bottom, 0px));
+    z-index: 1030;
+  }
+  .app-bottom-bar .btn { box-shadow: 0 -2px 12px rgba(0,0,0,.06); }
+}

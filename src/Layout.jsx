@@ -1,68 +1,99 @@
-// src/Layout.jsx
-import React from "react";
+import React, { useEffect } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import i18n from "./i18n";
+
+function LanguageSwitcher() {
+  const { t } = useTranslation();
+  const current = i18n.language?.split("-")[0] || "es";
+
+  return (
+    <div className="dropdown me-2">
+      <button
+        className="btn btn-outline-secondary dropdown-toggle"
+        data-bs-toggle="dropdown"
+        aria-expanded="false"
+        aria-label={t("nav.lang")}
+      >
+        🌐 {t(`nav.${current}`)}
+      </button>
+      <ul className="dropdown-menu dropdown-menu-end">
+        <li>
+          <button className="dropdown-item" onClick={() => i18n.changeLanguage("es")}>
+            🇪🇸 {t("nav.es")}
+          </button>
+        </li>
+        <li>
+          <button className="dropdown-item" onClick={() => i18n.changeLanguage("en")}>
+            🇺🇸 {t("nav.en")}
+          </button>
+        </li>
+        <li>
+          <button className="dropdown-item" onClick={() => i18n.changeLanguage("pt")}>
+            🇧🇷 {t("nav.pt")}
+          </button>
+        </li>
+      </ul>
+    </div>
+  );
+}
 
 export default function Layout() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
+
+  // Mantener <html lang=""> y dir="ltr/rtl" sincronizados
+  useEffect(() => {
+    const lng = i18n.language || "es";
+    document.documentElement.lang = lng;
+    document.documentElement.dir = i18n.dir(); // ES/EN/PT son ltr, pero queda listo
+  }, []);
+
+  useEffect(() => {
+    const unsub = i18n.on("languageChanged", (lng) => {
+      document.documentElement.lang = lng;
+      document.documentElement.dir = i18n.dir();
+    });
+    return () => { i18n.off("languageChanged", unsub); };
+  }, []);
 
   function handleSignOut() {
-    // Demo: si guardaste algo de "sesión", podés limpiarlo acá
-    // localStorage.removeItem("userEmail");
-    navigate("/"); // volver a la pantalla de inicio (Auth)
+    navigate("/"); // demo: volver al inicio
   }
 
   return (
     <>
-      {/* Enlace de salto para accesibilidad */}
       <a href="#main" className="skip-link">Saltar al contenido</a>
 
-      {/* NAVBAR */}
       <nav className="navbar navbar-expand-lg bg-body border-bottom sticky-top">
         <div className="container">
           <NavLink to="/app" className="navbar-brand d-flex align-items-center gap-2">
             <span role="img" aria-label="app icon">📱</span>
-            <span className="fw-semibold">Gastos de Transporte</span>
+            <span className="fw-semibold">{t("nav.brand")}</span>
           </NavLink>
 
-          <button
-            className="navbar-toggler"
-            type="button"
-            data-bs-toggle="collapse"
-            data-bs-target="#appNav"
-            aria-controls="appNav"
-            aria-expanded="false"
-            aria-label="Mostrar navegación"
-          >
+          <button className="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#appNav">
             <span className="navbar-toggler-icon"></span>
           </button>
 
           <div className="collapse navbar-collapse" id="appNav">
-            {/* LINKS IZQUIERDA */}
             <ul className="navbar-nav me-auto mb-2 mb-lg-0">
-              {/* Se quitó “Registro” porque ya estás autenticado en esta vista */}
               <li className="nav-item">
-                {/* Podés mantener “Ayuda” como ancla o como página aparte si lo preferís */}
-                <a className="nav-link" href="#help">Ayuda</a>
+                <a className="nav-link" href="#help">{t("nav.help")}</a>
               </li>
             </ul>
 
-            {/* ACCIONES DERECHA */}
-            <div className="d-flex">
-              <button
-                type="button"
-                className="btn btn-outline-secondary"
-                onClick={handleSignOut}
-                aria-label="Cerrar sesión y volver al inicio"
-              >
+            <div className="d-flex align-items-center">
+              <LanguageSwitcher />
+              <button type="button" className="btn btn-outline-secondary" onClick={handleSignOut}>
                 <i className="bi bi-box-arrow-right me-1"></i>
-                Cerrar sesión
+                {t("nav.signOut")}
               </button>
             </div>
           </div>
         </div>
       </nav>
 
-      {/* CONTENIDO */}
       <main id="main" className="container py-4">
         <Outlet />
       </main>
