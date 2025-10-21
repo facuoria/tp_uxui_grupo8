@@ -10,7 +10,7 @@ export default function Auth() {
   const [showPwd, setShowPwd] = useState(false);
 
   const [form, setForm] = useState({
-    email: "juan@gmail.com",
+    email: "",
     password: "",
     password2: "",
     name: "",
@@ -61,7 +61,7 @@ export default function Auth() {
                     className="form-control"
                     value={form.email}
                     onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-                    placeholder="ejemplo@correo.com"
+                    placeholder="Correo electrónico"  
                     required
                   />
                 </div>
@@ -75,7 +75,7 @@ export default function Auth() {
                       className="form-control"
                       value={form.password}
                       onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
-                      placeholder="•••••••"
+                      placeholder="Contraseña"
                       minLength={3}
                       required
                     />
@@ -102,7 +102,7 @@ export default function Auth() {
                         className="form-control"
                         value={form.password2}
                         onChange={(e) => setForm((f) => ({ ...f, password2: e.target.value }))}
-                        placeholder="•••••••"
+                        placeholder="Contraseña"
                         minLength={3}
                         required
                       />
