@@ -3,35 +3,66 @@ import { useTranslation, Trans } from "react-i18next";
 import i18n from "./i18n";
 
 /* ========= Modelo y helpers ========= */
-const MEDIOS = ["Colectivo","Taxi","Remis","App (Uber/Cabify)","Subte","Tren","Bici Publica","Monopatín","Caminando"];
+const MEDIOS = [
+  "Colectivo",
+  "Taxi",
+  "Remis",
+  "App (Uber/Cabify)",
+  "Subte",
+  "Tren",
+  "Bici Publica",
+  "Monopatín",
+  "Caminando",
+];
 
 const initialData = [
   { id: 1, medio: "Colectivo", anotaciones: "Línea 60 – boleto común", zona: "Centro", tiempoDemora: 25, gasto: 150.0, calificacion: 3, creadoEl: new Date("2024-03-02T10:15:00") },
   { id: 2, medio: "App (Uber/Cabify)", anotaciones: "Tarifa dinámica baja", zona: "Cerro", tiempoDemora: 18, gasto: 2200.5, calificacion: 5, creadoEl: new Date("2024-04-21T08:00:00") },
   { id: 3, medio: "Taxi", anotaciones: "Tramo corto", zona: "Nueva Córdoba", tiempoDemora: 10, gasto: 1100, calificacion: 4, creadoEl: new Date("2024-05-11T19:30:00") },
+  { id: 4, medio: "Bici Publica", anotaciones: "Trayecto corto al trabajo", zona: "Alta Córdoba", tiempoDemora: 15, gasto: 0, calificacion: 5, creadoEl: new Date("2024-05-20T08:30:00") },
+  { id: 5, medio: "Subte", anotaciones: "Línea B – viaje rápido", zona: "Microcentro", tiempoDemora: 12, gasto: 180, calificacion: 4, creadoEl: new Date("2024-05-22T18:20:00") },
+  { id: 6, medio: "Remis", anotaciones: "Servicio puntual, chofer amable", zona: "General Paz", tiempoDemora: 20, gasto: 1600, calificacion: 5, creadoEl: new Date("2024-06-01T09:10:00") },
+  { id: 7, medio: "Caminando", anotaciones: "Caminata matutina", zona: "Centro", tiempoDemora: 8, gasto: 0, calificacion: 5, creadoEl: new Date("2024-06-03T07:50:00") },
+  { id: 8, medio: "App (Uber/Cabify)", anotaciones: "Demora por tráfico", zona: "Cofico", tiempoDemora: 30, gasto: 2800, calificacion: 3, creadoEl: new Date("2024-06-04T18:40:00") },
+  { id: 9, medio: "Monopatín", anotaciones: "Batería al 30%, trayecto corto", zona: "Centro", tiempoDemora: 7, gasto: 220, calificacion: 4, creadoEl: new Date("2024-06-05T12:00:00") },
+  { id: 10, medio: "Tren", anotaciones: "Puntual, limpio", zona: "La Calera", tiempoDemora: 40, gasto: 600, calificacion: 5, creadoEl: new Date("2024-06-07T07:00:00") }
 ];
 
 let NEXT_ID = initialData.length + 1;
 const LS_KEY = "transport-expenses/v2";
 
-/** Normaliza texto (minúsculas + sin tildes) */
-const norm = (s) => String(s || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+const norm = (s) =>
+  String(s || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
 
-/** Debounce simple */
 function useDebounced(value, delay = 250) {
   const [v, setV] = React.useState(value);
-  React.useEffect(() => { const t = setTimeout(() => setV(value), delay); return () => clearTimeout(t); }, [value, delay]);
+  React.useEffect(() => {
+    const t = setTimeout(() => setV(value), delay);
+    return () => clearTimeout(t);
+  }, [value, delay]);
   return v;
 }
 
 /* ========= UI utilitaria ========= */
 function Toast({ toast, onClose }) {
-  useEffect(() => { if (!toast) return; const t = setTimeout(onClose, 3000); return () => clearTimeout(t); }, [toast, onClose]);
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(onClose, 3000);
+    return () => clearTimeout(t);
+  }, [toast, onClose]);
   if (!toast) return null;
   return (
-    <div role="status" aria-live="polite"
-      className={`position-fixed top-0 end-0 m-3 alert ${toast.type === "ok" ? "alert-success" : "alert-danger"} shadow`}
-      onClick={onClose} style={{ zIndex: 1056, cursor: "pointer" }}>
+    <div
+      role="status"
+      aria-live="polite"
+      className={`position-fixed top-0 end-0 m-3 alert ${toast.type === "ok" ? "alert-success" : "alert-danger"
+        } shadow`}
+      onClick={onClose}
+      style={{ zIndex: 1056, cursor: "pointer" }}
+    >
       {toast.msg}
     </div>
   );
@@ -65,12 +96,24 @@ function ConfirmDialog({ show, title, message, confirmText = "Confirmar", cancel
 export default function App() {
   const { t } = useTranslation();
 
-  /* Estado y persistencia */
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  const [detailItem, setDetailItem] = useState(null);
+  function openDetail(it) { setDetailItem(it); }
+  function closeDetail() { setDetailItem(null); }
+
   const [items, setItems] = useState(() => {
     const stored = localStorage.getItem(LS_KEY);
     if (stored) {
-      try { const arr = JSON.parse(stored); return arr.map((it) => ({ ...it, creadoEl: new Date(it.creadoEl ?? new Date()) })); }
-      catch {}
+      try {
+        const arr = JSON.parse(stored);
+        return arr.map((it) => ({ ...it, creadoEl: new Date(it.creadoEl ?? new Date()) }));
+      } catch { }
     }
     return initialData;
   });
@@ -79,10 +122,8 @@ export default function App() {
     localStorage.setItem(LS_KEY, JSON.stringify(items.map((it) => ({ ...it, creadoEl: new Date(it.creadoEl).toISOString() }))));
   }, [items]);
 
-  /* Formulario */
   const [form, setForm] = useState({ id: null, medio: MEDIOS[0], anotaciones: "", zona: "", tiempoDemora: 0, gasto: 0, calificacion: 3 });
   const [editingId, setEditingId] = useState(null);
-
   const errors = {
     gasto: form.gasto <= 0 ? t("toasts.gastoInvalid") : "",
     calificacion: form.calificacion < 1 || form.calificacion > 5 ? t("toasts.califInvalid") : "",
@@ -102,7 +143,8 @@ export default function App() {
       setItems((prev) => prev.map((it) => (it.id === editingId ? { ...it, ...form } : it)));
       setToast({ type: "ok", msg: t("toasts.updated") });
     }
-    resetForm(); setShowForm(false);
+    resetForm();
+    setShowForm(false);
   }
 
   function resetForm() { setForm({ id: null, medio: MEDIOS[0], anotaciones: "", zona: "", tiempoDemora: 0, gasto: 0, calificacion: 3 }); setEditingId(null); }
@@ -114,7 +156,7 @@ export default function App() {
     setShowForm(true);
   }
 
-  /* Búsqueda, orden, paginación */
+  /* === Búsqueda, orden, paginación === */
   const [qInput, setQInput] = useState("");
   const q = useDebounced(qInput, 250);
   const [orderBy, setOrderBy] = useState("creadoEl");
@@ -125,36 +167,73 @@ export default function App() {
   const filtered = useMemo(() => {
     const text = norm(q.trim());
     let out = items.filter((it) => [it.medio, it.anotaciones, it.zona].some((v) => norm(v).includes(text)));
-    out.sort((a, b) => { const va = a[orderBy], vb = b[orderBy]; if (va < vb) return orderDir === "asc" ? -1 : 1; if (va > vb) return orderDir === "asc" ? 1 : -1; return 0; });
+    out.sort((a, b) => {
+      const va = a[orderBy], vb = b[orderBy];
+      if (va < vb) return orderDir === "asc" ? -1 : 1;
+      if (va > vb) return orderDir === "asc" ? 1 : -1;
+      return 0;
+    });
     return out;
   }, [items, q, orderBy, orderDir]);
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / rowsPerPage));
-  useEffect(() => { if (page > totalPages) setPage(totalPages); }, [page, totalPages]);
+  // --- PAGINACIÓN CORREGIDA ---
+  const totalPages = useMemo(() => {
+    return Math.max(1, Math.ceil(filtered.length / rowsPerPage));
+  }, [filtered.length, rowsPerPage]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [q, orderBy, orderDir, rowsPerPage]);
+
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+  }, [page, totalPages]);
 
   const paginated = useMemo(() => {
     const start = (page - 1) * rowsPerPage;
-    return filtered.slice(start, start + rowsPerPage);
-  }, [filtered, page, rowsPerPage]);
+    const end = start + rowsPerPage;
+    return filtered.slice(start, end);
+  }, [filtered, filtered.length, page, rowsPerPage]);
 
-  /* UI: toasts, confirmaciones, ayuda */
+  const startIndex = filtered.length === 0 ? 0 : (page - 1) * rowsPerPage + 1;
+  const endIndex = filtered.length === 0 ? 0 : Math.min(page * rowsPerPage, filtered.length);
+  const sortState = (key) => (orderBy === key ? (orderDir === "asc" ? "ascending" : "descending") : "none");
+
+  /* === UI, ayuda, confirmación === */
   const [toast, setToast] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
   const [confirm, setConfirm] = useState({ open: false, id: null });
 
   function askDelete(id) { setConfirm({ open: true, id }); }
-  function confirmDelete() { if (confirm.id != null) { setItems((prev) => prev.filter((x) => x.id !== confirm.id)); setToast({ type: "ok", msg: t("toasts.deleted") }); } setConfirm({ open: false, id: null }); }
+  function confirmDelete() {
+    if (confirm.id != null) {
+      setItems((prev) => {
+        const updated = prev.filter((x) => x.id !== confirm.id);
+        const maxPage = Math.max(1, Math.ceil(updated.length / rowsPerPage));
+        if (page > maxPage) setPage(maxPage);
+        return updated;
+      });
+      setToast({ type: "ok", msg: t("toasts.deleted") });
+    }
+    setConfirm({ open: false, id: null });
+  }
 
-  // Navbar #help → abrir modal ayuda + limpiar hash al cerrar
   useEffect(() => {
     function onHash() { if (window.location.hash === "#help") setShowHelp(true); }
     window.addEventListener("hashchange", onHash); onHash();
     return () => window.removeEventListener("hashchange", onHash);
   }, []);
-  function closeHelp() { setShowHelp(false); if (window.location.hash === "#help") history.replaceState(null, "", " "); }
 
-  // Atajos de teclado: "/" enfoca búsqueda, "n" abre form (desktop)
+  useEffect(() => {
+    console.log("Página:", page, "Total páginas:", totalPages, "Items visibles:", paginated.length);
+  }, [page, totalPages, paginated]);
+
+  function closeHelp() {
+    setShowHelp(false);
+    if (window.location.hash === "#help") history.replaceState(null, "", " ");
+  }
+
   const searchRef = useRef(null);
   useEffect(() => {
     function onKey(e) {
@@ -167,12 +246,6 @@ export default function App() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  // Paginador
-  const startIndex = (page - 1) * rowsPerPage + 1;
-  const endIndex = Math.min(startIndex + rowsPerPage - 1, filtered.length);
-  const sortState = (key) => (orderBy === key ? (orderDir === "asc" ? "ascending" : "descending") : "none");
-
-  // Helpers de formato según idioma activo
   const fmtCurrency = (n) => new Intl.NumberFormat(i18n.language, { style: "currency", currency: "ARS" }).format(Number(n || 0));
   const fmtDate = (d) => new Date(d).toLocaleDateString(i18n.language);
 
@@ -184,9 +257,8 @@ export default function App() {
           <div className="col-12 col-lg-8 col-xl-6">
             <h1 className="display-6 fw-semibold mb-1">{t("hero.title")}</h1>
             <p className="lead text-body-secondary mb-3">{t("hero.subtitle")}</p>
-
             <div className="d-flex justify-content-center">
-              <button className="btn btn-primary btn-lg" onClick={() => setShowForm((v) => !v)}>
+              <button type="button" className={showForm ? "btn btn-secondary btn-lg" : "btn btn-primary btn-lg"} onClick={() => setShowForm((v) => !v)}>
                 <i className="bi bi-plus-lg me-1"></i>
                 {showForm ? t("hero.closeForm") : t("hero.new")}
               </button>
@@ -304,49 +376,51 @@ export default function App() {
         </form>
       )}
 
-      {/* TABLA (sin ID) */}
+      {/* TABLA */}
       <div className="card shadow-sm">
         <div className="card-body p-0">
           <div className="table-responsive">
             <table className="table table-hover align-middle mb-0">
               <thead className="table-light">
                 <tr>
-                  <th scope="col" aria-sort={sortState("medio")}>{t("table.medio")}</th>
-                  <th scope="col" aria-sort={sortState("anotaciones")}>{t("table.anotaciones")}</th>
-                  <th scope="col" aria-sort={sortState("zona")}>{t("table.zona")}</th>
-                  <th scope="col" aria-sort={sortState("tiempoDemora")}>{t("table.demora")}</th>
-                  <th scope="col" aria-sort={sortState("gasto")}>{t("table.gasto")}</th>
-                  <th scope="col" aria-sort={sortState("calificacion")}>{t("table.calif")}</th>
-                  <th scope="col" aria-sort={sortState("creadoEl")}>{t("table.fecha")}</th>
-                  <th scope="col" className="text-nowrap">{t("table.acciones")}</th>
+                  <th>{t("table.medio")}</th>
+                  {!isMobile && <th>{t("table.anotaciones")}</th>}
+                  {!isMobile && <th>{t("table.zona")}</th>}
+                  {!isMobile && <th>{t("table.demora")}</th>}
+                  <th>{t("table.gasto")}</th>
+                  {!isMobile && <th>{t("table.calif")}</th>}
+                  {!isMobile && <th>{t("table.fecha")}</th>}
+                  <th className="text-nowrap">{t("table.acciones")}</th>
                 </tr>
               </thead>
               <tbody>
                 {paginated.map((it) => (
                   <tr key={it.id}>
                     <td>{it.medio}</td>
-                    <td title={it.anotaciones}>
-                      {String(it.anotaciones || "").slice(0, 40)}
-                      {String(it.anotaciones || "").length > 40 ? "…" : ""}
-                    </td>
-                    <td>{it.zona}</td>
-                    <td>{it.tiempoDemora} min</td>
+                    {!isMobile && <td title={it.anotaciones}>{it.anotaciones}</td>}
+                    {!isMobile && <td>{it.zona}</td>}
+                    {!isMobile && <td>{it.tiempoDemora} min</td>}
                     <td>{fmtCurrency(it.gasto)}</td>
-                    <td>{it.calificacion}/5</td>
-                    <td>{fmtDate(it.creadoEl)}</td>
+                    {!isMobile && <td>{it.calificacion}/5</td>}
+                    {!isMobile && <td>{fmtDate(it.creadoEl)}</td>}
                     <td className="text-nowrap">
-                      <button className="btn btn-sm btn-outline-primary me-1" onClick={() => handleEdit(it.id)} aria-label={t("actions.edit")}>
+                      <button className="btn btn-sm btn-outline-primary me-1" onClick={() => handleEdit(it.id)}>
                         <i className="bi bi-pencil"></i>
                       </button>
-                      <button className="btn btn-sm btn-outline-danger" onClick={() => askDelete(it.id)} aria-label={t("actions.del")}>
+                      <button className="btn btn-sm btn-outline-danger me-1" onClick={() => askDelete(it.id)}>
                         <i className="bi bi-trash"></i>
                       </button>
+                      {isMobile && (
+                        <button className="btn btn-sm btn-outline-secondary" onClick={() => openDetail(it)}>
+                          <i className="bi bi-eye"></i>
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}
                 {paginated.length === 0 && (
                   <tr>
-                    <td colSpan={8} className="text-center text-body-secondary py-4">
+                    <td colSpan={isMobile ? 3 : 8} className="text-center text-body-secondary py-4">
                       {t("table.empty1", { q: qInput })}{" "}
                       <button className="btn btn-sm btn-primary ms-1" onClick={() => setShowForm(true)}>
                         {t("table.empty2")}
@@ -360,41 +434,66 @@ export default function App() {
         </div>
       </div>
 
-      {/* PIE */}
-      <div className="row align-items-center mt-3 g-2">
-        <div className="col-12 col-md-4 d-none d-md-block"></div>
-        <div className="col-12 col-md-4">
-          <div className="d-flex justify-content-center align-items-center gap-3 flex-wrap">
-            <button className="btn btn-outline-secondary" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>
-              {t("actions.prev")}
-            </button>
-            <div className="text-body-secondary">
-              {t("pagination.page", { page, total: totalPages, from: filtered.length === 0 ? 0 : startIndex, to: filtered.length === 0 ? 0 : endIndex, count: filtered.length })}
-            </div>
-            <button className="btn btn-outline-secondary" disabled={page >= totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))}>
-              {t("actions.next")}
-            </button>
-          </div>
-        </div>
-        <div className="col-12 col-md-4 d-flex align-items-center justify-content-md-end justify-content-center gap-2">
-          <label htmlFor="rpp" className="form-label mb-0">{t("pagination.rows")}</label>
-          <select id="rpp" value={rowsPerPage} onChange={(e) => { setRowsPerPage(Number(e.target.value)); setPage(1); }} className="form-select" style={{ maxWidth: 96 }}>
-            <option value={3}>3</option><option value={5}>5</option><option value={10}>10</option>
-          </select>
-        </div>
-      </div>
+      {/* PIE DE PAGINACIÓN */}
+<div className="row align-items-center mt-4 g-3">
+  {/* Columna izquierda vacía (espaciado en desktop) */}
+  <div className="col-12 col-md-4 d-none d-md-block"></div>
 
-      {/* Barra inferior móvil */}
-      <div className="app-bottom-bar d-sm-none">
-        <button className="btn btn-primary flex-fill" onClick={() => setShowForm((v) => !v)}>
-          <i className="bi bi-plus-lg me-1"></i>{showForm ? t("mobileBar.close") : t("hero.new")}
-        </button>
-        <button className="btn btn-outline-secondary btn-icon-sm" onClick={() => searchRef.current?.focus()} aria-label={t("mobileBar.search")} title={t("mobileBar.search")}>
-          <i className="bi bi-search"></i>
-        </button>
-      </div>
+  {/* Columna central: texto y botones */}
+  <div className="col-12 col-md-4 text-center">
+    {/* Texto de rango de registros */}
+    <div className="text-body-secondary mb-2">
+      Mostrando <strong>{startIndex}</strong>–<strong>{endIndex}</strong> de{" "}
+      <strong>{filtered.length}</strong> registros
+    </div>
 
-      {/* Ayuda */}
+    {/* Botones de paginación */}
+    <div className="d-flex justify-content-center align-items-center gap-3 flex-wrap">
+      <button
+        className="btn btn-outline-secondary"
+        disabled={page <= 1}
+        onClick={() => setPage((prev) => Math.max(1, prev - 1))}
+      >
+        {t("actions.prev")}
+      </button>
+
+      <span className="text-body-secondary small">
+        Página {page} de {totalPages}
+      </span>
+
+      <button
+        className="btn btn-outline-secondary"
+        disabled={page >= totalPages}
+        onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
+      >
+        {t("actions.next")}
+      </button>
+    </div>
+  </div>
+
+  {/* Columna derecha: selector de filas */}
+  <div className="col-12 col-md-4 d-flex align-items-center justify-content-md-end justify-content-center gap-2">
+    <label htmlFor="rpp" className="form-label mb-0">
+      {t("pagination.rows")}
+    </label>
+    <select
+      id="rpp"
+      value={rowsPerPage}
+      onChange={(e) => {
+        setRowsPerPage(Number(e.target.value));
+        setPage(1);
+      }}
+      className="form-select"
+      style={{ maxWidth: 96 }}
+    >
+      <option value={3}>3</option>
+      <option value={5}>5</option>
+      <option value={10}>10</option>
+    </select>
+  </div>
+</div>
+
+      {/* MODALES */}
       {showHelp && (
         <>
           <div className="modal-backdrop fade show"></div>
@@ -432,6 +531,36 @@ export default function App() {
         onConfirm={confirmDelete}
         onCancel={() => setConfirm({ open: false, id: null })}
       />
+
+      {detailItem && (
+        <>
+          <div className="modal-backdrop fade show"></div>
+          <div className="modal d-block" role="dialog" aria-modal="true" aria-labelledby="detailTitle" onClick={closeDetail}>
+            <div className="modal-dialog modal-dialog-centered" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-content">
+                <div className="modal-header">
+                  <h5 id="detailTitle" className="modal-title">{t("table.detailTitle")}</h5>
+                  <button className="btn-close" aria-label="Cerrar" onClick={closeDetail} />
+                </div>
+                <div className="modal-body">
+                  <div className="d-flex flex-column gap-2">
+                    <div><strong>{t("table.medio")}:</strong> {detailItem.medio}</div>
+                    <div><strong>{t("table.anotaciones")}:</strong> {detailItem.anotaciones || "-"}</div>
+                    <div><strong>{t("table.zona")}:</strong> {detailItem.zona || "-"}</div>
+                    <div><strong>{t("table.demora")}:</strong> {detailItem.tiempoDemora} min</div>
+                    <div><strong>{t("table.gasto")}:</strong> {fmtCurrency(detailItem.gasto)}</div>
+                    <div><strong>{t("table.calif")}:</strong> {detailItem.calificacion}/5 ⭐</div>
+                    <div><strong>{t("table.fecha")}:</strong> {fmtDate(detailItem.creadoEl)}</div>
+                  </div>
+                </div>
+                <div className="modal-footer">
+                  <button className="btn btn-secondary" onClick={closeDetail}>{t("actions.close")}</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </>
   );
 }
