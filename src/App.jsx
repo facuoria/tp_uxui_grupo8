@@ -166,38 +166,44 @@ export default function App() {
 
   const filtered = useMemo(() => {
     const text = norm(q.trim());
-    let out = items.filter((it) => [it.medio, it.anotaciones, it.zona].some((v) => norm(v).includes(text)));
+    let out = items.filter((it) =>
+      [it.medio, it.anotaciones, it.zona].some((v) => norm(v).includes(text))
+    );
+    const dir = orderDir === "asc" ? 1 : -1;
     out.sort((a, b) => {
-      const va = a[orderBy], vb = b[orderBy];
-      if (va < vb) return orderDir === "asc" ? -1 : 1;
-      if (va > vb) return orderDir === "asc" ? 1 : -1;
-      return 0;
+      let va = a[orderBy], vb = b[orderBy];
+      if (orderBy === "creadoEl") return (va.valueOf() - vb.valueOf()) * dir; // fechas
+      if (typeof va === "number" && typeof vb === "number") return (va - vb) * dir;
+      return String(va).localeCompare(String(vb), undefined, { sensitivity: "base" }) * dir;
     });
     return out;
   }, [items, q, orderBy, orderDir]);
 
-  // --- PAGINACIÓN CORREGIDA ---
+
+  // --- PAGINACIÓN CORREGIDA Y ROBUSTA ---
+  const RPP = useMemo(() => Number(rowsPerPage) || 5, [rowsPerPage]);  // ← ÚNICA fuente de verdad numérica
+
   const totalPages = useMemo(() => {
-    return Math.max(1, Math.ceil(filtered.length / rowsPerPage));
-  }, [filtered.length, rowsPerPage]);
+    return Math.max(1, Math.ceil(filtered.length / RPP));
+  }, [filtered.length, RPP]);
 
   useEffect(() => {
-    setPage(1);
-  }, [q, orderBy, orderDir, rowsPerPage]);
+    setPage(1);               // reset al cambiar filtros/orden o cantidad de filas
+  }, [q, orderBy, orderDir, RPP]);
 
   useEffect(() => {
-    if (page > totalPages) setPage(totalPages);
+    if (page > totalPages) setPage(totalPages);  // si borro/filtrado deja la página fuera de rango
   }, [page, totalPages]);
 
   const paginated = useMemo(() => {
-    const start = (page - 1) * rowsPerPage;
-    const end = start + rowsPerPage;
+    const p = Number(page) || 1;
+    const start = (p - 1) * RPP;
+    const end = start + RPP;
     return filtered.slice(start, end);
-  }, [filtered, filtered.length, page, rowsPerPage]);
+  }, [filtered, page, RPP]);
 
-  const startIndex = filtered.length === 0 ? 0 : (page - 1) * rowsPerPage + 1;
-  const endIndex = filtered.length === 0 ? 0 : Math.min(page * rowsPerPage, filtered.length);
-  const sortState = (key) => (orderBy === key ? (orderDir === "asc" ? "ascending" : "descending") : "none");
+  const startIndex = filtered.length === 0 ? 0 : (Number(page) - 1) * RPP + 1;
+  const endIndex   = filtered.length === 0 ? 0 : Math.min(Number(page) * RPP, filtered.length);
 
   /* === UI, ayuda, confirmación === */
   const [toast, setToast] = useState(null);
